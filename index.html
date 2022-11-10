@@ -1,86 +1,77 @@
-<!DOCTYPE html>
-<html lang="en">
+<!--
+    Пример основан на: https://github.com/sberdevices/assistant-client/tree/main/examples/umd-example
+    Для отладки эту страницу нужно открывать с параметром devel. Пример:
+	https://example.ru/frontend.html?devel=true
+-->
+
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assistant script sample</title>
-    <style type="text/css">
-        html {
-            height: 100%;
-            background-color: darkolivegreen;
-        }
-
-        h1 {
-            color: #fff;
-        }
-
-        ul#root {
-            font-size: 2em;
-            color: #fff;
-        }
-    </style>
+    <title>Sber canvas app example</title>
+    <META HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">
+    <META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
+    <META HTTP-EQUIV="expires" content="Mon, 01 Jan 1990 00:00:00 GMT">
+    <META HTTP-EQUIV="Content-language" CONTENT="ru">
+    <META NAME="author" CONTENT="Nikolaev Dmitry">
     <script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@sberdevices/assistant-client@2.4.0/umd/assistant.min.js"></script>
+    <script src="https://unpkg.com/@sberdevices/assistant-client@3.7.1/umd/assistant.min.js""></script>
 </head>
+<style>
+body{
+    background-color: #1A1A1A;
+}
+div#command{
+    width: 90vw;
+    overflow: auto;
+    margin: 20px;
+    padding: 10px;
+    border: 1px solid red;
+    color: white;
+}
+</style>
 <body>
-    <h1>Мой список дел:</h1>
-    <ul id="root"></ul>
-    <script type="text/javascript">
-        var token = ''; // <- сюда вставляем токен из smartapp-studio
-        var initPhrase = ''; // <- сюда вставляем активизационную фразу
-        var state = { item_selector: { items: [] } };
+<div id="command"></div>
+<button id="next">Далее</button>
+<script type="text/javascript">
+    var state = { };
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('devel') === 'true'){
+        console.info('Start devel version');
+        var token = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjY2QyOTFmNjM5MWVmMTg4YjgxMzRkYmRkYjIwYzdmZGFhODQwNmQ1ZTI3NzAwODNmNmRkZDMyOWFkZGYwOWU5MDNiNmMyOTQzMDAzYjJjYjUzOWJlOTI3MDA0MjYyOTgiLCJhdWQiOiJWUFMiLCJleHAiOjE2NjgxODAwMDksImlhdCI6MTY2ODA5MzU5OSwiaXNzIjoiS0VZTUFTVEVSIiwidHlwZSI6IkJlYXJlciIsImp0aSI6IjIyYTcyMWNjLTNkNzktNDcxYS1iZDExLTQ3NzNkZjAzZGMzYiIsInNpZCI6IjljN2I5Yjg5LTg3YTYtNGRjOC05YTYyLWQyOGU4Y2QzMGUxMyJ9.obQxQjOEz1KMVK4xvVzpB7aEjQ4usSrmE0IxoY8utlYJNsotiOVPJ75N_x1CX8HySCULt2bXY6buQGKSWFkPrmQib8KpGbeQ2aM6Q2_DiyLcauj6fasmE1EdYsQKUqmY-NG4hJXZaGIM_8PkL3Wq1ssey6G20HcidmxWh0eqHg3oz3sAQZkUGjjEqeMfmWPDHWngcUmOcSMavVqIAYCS6EPfvrMDYi5bF90-_pDW0_tmHRuvcZcdVtt11qz6oX06hcy9gs8Zx4_Ln5fk3Mu7H2gyAAkeUqZvmEpw--6wmXlc6D3TryPbbInEyOQslqol_O5AehjTkM0ZC_HP-hni9mLbvBegw1xGOmxvlCICFgMtcub1QKnZLVan-Zjh83H8OgKBCiIgJWpPzi94uC4qlGfTH60UVGs4LX7tpdl_gA19gsh5Vc33lwJ9GxSgKusBBSO3vD9-MsEuQUvaCKS3TS6KBxc9DeWVTZORNDAkwktSXUIHF2yEFtMymL3dBwApas-WltDHuoQ5OzHsE0vrj7RlPyx96n060kzDHYcUBlzDb7QnH_cmh88rXF3ocKAMp-7Ko8cCyQAoHFlld03hKXuiA79sZe2RqqHRg6_I7yzpGj_R02eE_5cUUk56S1wvJDnMlFYvLiBBc8GvurPp0PTsno-MYOGFt9rqlc_1EJk'; // <- сюда вставляем токен из smartapp-studio (https://github.com/sberdevices/assistant-client/tree/main/examples/umd-example)
+        var initPhrase = 'запусти Лампа'; // <- сюда вставляем активационную фразу своего canvas app
+        var ac = assistant.createSmartappDebugger({ getState: () => state, token, initPhrase });
+    }else{
+        console.info('Start production version');
+        var ac = assistant.createAssistant({ getState: () => state });
+    }
+    var processData = function(command){
+        console.info('got command',command);
+        document.getElementById('command').innerHTML = JSON.stringify(command);
+    }
 
-        function addNote(id, title, completed) {
-            var note = document.createElement('li');
-            note.id = 'note-'+id;
-            note.innerText = title;
-            
-            document.getElementById('root').append(note);
+    ac.on('start', (command) => {
+        let initialData = ac.getInitialData();
+        for(let i=0; i < initialData.length; i++){
+            processData(initialData[i]);
         }
-
-        function deleteNote(id) {
-            var note = document.getElementById('note-'+id)
-            if (note != null) {
-                note.remove();
-            }
-        }
-
-        function doneNote(id) {
-            var note = document.getElementById('note-'+id)
-            if (note != null) {
-                note.style.textDecoration = 'line-through';
-            }
-        }
-
-        var assistant = assistant.createSmartappDebugger({ getState: () => state, token, initPhrase });
-        assistant.on('data', ({ action }) => {
-            if (!action) {
-                return;
-            }
-
-            switch(action.type) {
-                case 'add_note':
-                    var id = Math.random().toString(36).substring(7);
-                    state.item_selector.items.push({
-                        id,
-                        title: action.note,
-                        completed: false
-                    });
-                    addNote(id, action.note, false);
-
-                case 'delete_note':
-                    state.item_selector.items = state.item_selector.items.filter(({ id }) => id !== action.id);
-                    deleteNote(action.id);
-                    break;
-                case 'done_note':
-                    state.item_selector.items = state.item_selector.items.map((note) => (note.id === action.id ? { ...note, completed: true } : note));
-                    doneNote(action.id);
-                default:
-                    console.error('Unsupported action-type', action.type);
-                    break;
-            }
-        });
-    </script>
+    });
+    ac.on('data', (command) => {
+        processData(command);
+    });
+    
+    document.addEventListener("DOMContentLoaded", function(){
+	var el = document.getElementById("next");
+	el.addEventListener(
+	    "click",
+	    function(){
+		console.log('send data to webhook',el.id);
+		ac.sendData({ action: { action_id: el.id} });
+	    },
+	    false
+	);
+    });
+</script>
 </body>
 </html>
